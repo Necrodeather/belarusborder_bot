@@ -1,0 +1,1 @@
+tasklist|findstr /i /l /c:"putty.exe"
