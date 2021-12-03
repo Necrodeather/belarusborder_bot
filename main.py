@@ -1,52 +1,67 @@
 from selenium import webdriver
 from time import sleep
 
-driver = webdriver.Firefox()
-driver.get("https://belarusborder.by/book")
+checkbox = driver.find_elements_by_class_name("label")
+btn_next_id = driver.find_element_by_id("next")
+btn_next_class = driver.find_element_by_class_name("next")
 
-inp = driver.find_elements_by_class_name("label")
-inp[3].click()
+class belarusborder_bot(object):
 
-btn = driver.find_element_by_id("next")
-btn.click()
+        def __init__(self, driver, date, time, number_check_one, number_check_two):
+                self.driver = driver
+                self.date = date
+                self.time = time
+                self.number_check_one = number_check_one
+                self.number_check_two = number_check_two
 
-inp = driver.find_elements_by_class_name("label")
-inp[3].click()
+        def Queue(self):
+                self.first_start()
+                self.one_point()
+                self.two_point()
 
-btn = driver.find_element_by_class_name("next")
-btn.click()
+        def first_start(self):
+                self.driver.get("https://belarusborder.by/book")
 
-i = 0
-times = driver.find_elements_by_class_name("intervalAvailable")
-timer = input("На какое время: ")
-for time in times:
+        def one_point(self):               
+                checkbox[self.number_check_one - 1].click()
+                btn_next_id.click()
+
+        def two_point(self):
+                checkbox[self.number_check_two - 1].click()
+                btn_next_class.click()
+
+class bot_step(object):
+
+        def __init__(self):
+                pass
+
         
-        str_time = time.text
-        str_time = str_time[:5]
+        date= driver.get("https://belarusborder.by/book/time?date=" + input_date)
 
-        while str_time != timer:
-                break
-        else:
-                i=+1
+        timer = input("На какое время: ")
+        driver.refresh()
+        times = driver.find_elements_by_class_name("intervalAvailable")
+        for time in times:
+                
+                str_time = time.text
+                str_time = str_time[:5]
 
-print(i)
-times[i-1].click()
-test = driver.find_element_by_class_name("intervalSelected")
-str_test = test.text
-str_test = str_test[:5]
+                if str_time == timer:
+                        time.click()
+                        break
+                else:        
+                        continue
 
-if str_test == timer:
-        print('true')
+        test = driver.find_element_by_class_name("intervalSelected")
+        str_test = test.text
+        str_test = str_test[:5]
 
-# dates = driver.find_elements_by_css_selector("td.day")
-# old_dates = driver.find_elements_by_css_selector("td.old")
-# disables_dates = driver.find_elements_by_css_selector("td.disabled")
-# for data in dates:
-#     for old_data in old_dates:
-#         for disable_data in disables_dates:
-#             if data != old_data and disable_data:
-#                 print(data.__class__.text)
-#             else:
-#                 print('-')
+        if str_test == timer:
+                print('true')
+        input("(Пройдите капчу и нажмите Enter) ")
+        btn_next_id.click()
+        sleep(15)
 
-sleep(15)
+
+input_date = input("Дата: ")
+driver = webdriver.Firefox()
