@@ -1,5 +1,8 @@
 from selenium import webdriver
+from selenium.common.exceptions import NoSuchElementException
 from time import sleep
+from winsound import Beep
+from os import system
 
 #Текст
 category = 'Категория Транспортного средства\n1.Легковой автомобиль\n2.Грузовой автомобиль\n3.Автобус\n4.Легковой/пассажирский микроавтобус\n5.Мотоцикл'
@@ -94,22 +97,46 @@ class bot_step(object):
                                 continue
 
         def cycle_two_time(self):
-                self.check_time = self.webdriver.find_elements_by_class_name("intervalAvailable")
-                self.check_control = self.webdriver.find_element_by_class_name("intervalSelected")
-                
-                if slice(self.check_control) == self.time:
-                        input("(Пройдите капчу и нажмите Enter)")
-                        btn_next_id_click()
+                try:
+                        self.check_time = self.webdriver.find_elements_by_class_name("intervalAvailable")
+                        self.check_control = self.webdriver.find_element_by_class_name("intervalSelected")
+                        if slice(self.check_control) == self.time:
+
+                                for sound in range(60):
+                                        Beep(440, 250)
+                                        sleep(0.25)
+                                        system('cls')
+                                        print('Найдена бронь!')
+
+                                input("Пройдите капчу и нажмите Enter")                                       
+                                btn_next_id_click()
+
+                except NoSuchElementException:
+                        while True:
+                                self.webdriver.refresh()
+                                bot_step.cycle_fisrt_time(self)
+                                bot_step.cycle_two_time(self)
 
 ###################Осталось написать автоматическую авторизацию##########################################
-###################И цикл вы ловли брони со звуковым уведомлением########################################
 
 def main():
         first_step = belarusborder_bot(driver,input_checkbox_one,input_checkbox_two)
         second_step = bot_step(driver,input_date, input_time)
         first_step.first_queue()
         second_step.second_queue()
-        sleep(500)
+        rebooting()
+
+def rebooting():
+        reboot = int(input('Продолжить работу?\n1.Да\n2.Нет\n: '))
+        match reboot:
+                case 1: 
+                        main()
+                case 2:
+                        quit()
+                case _:
+                        system('cls')
+                        print('Неверное значение\n')
+                        rebooting()        
 
 if __name__ == '__main__':
         main()
