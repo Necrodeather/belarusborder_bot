@@ -3,7 +3,6 @@ from selenium.common.exceptions import NoSuchElementException
 from selenium.common.exceptions import WebDriverException
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.keys import Keys
-from selenium.common.exceptions import ElementClickInterceptedException
 from time import sleep
 from winsound import Beep
 from os import system
@@ -11,16 +10,11 @@ import json
 
 # Текст
 category = 'Категория Транспортного средства\n1.Легковой автомобиль\n2.Грузовой автомобиль\n3.Автобус\n4.Легковой/пассажирский микроавтобус\n5.Мотоцикл'
-сheckpoint = 'Пункт пропуска\n1.Брест\n2.Урбаны\n3.Бенякони\n4.Котловка\n5.Григоровщина'
+сheckpoint = 'Пункт пропуска\n1.Урбаны\n2.Бенякони\n3.Каменный Лог\n4.Котловка\n5.Григоровщина'
 timing = '\n00-01 01-02 02-03 03-04 04-05 05-06\n06-07 07-08 08-09 09-10 10-11 11-12\n12-13 13-14 14-15 15-16 16-17 17-18\n18-19 19-20 20-21 21-22 22-23 23-00'
 InputError = 'Ошибка ввода данных при выборе категории ТС и пункта пропуска!'
-# Отключение логов драйвера
-#options = webdriver.ChromeOptions()
-#options.add_experimental_option('excludeSwitches', ['enable-logging'])
 # Драйвер
-#driver = webdriver.Chrome(options=options)
 driver = webdriver.Firefox()
-
 ########################Ввод данных#############################################
 def input_dates():
     try:
@@ -52,10 +46,7 @@ def checkbox_click(i):
 
 def btn_next_id_click():
     btn_next_id = driver.find_element_by_id("next")
-    try:
-        btn_next_id.click()
-    except ElementClickInterceptedException:
-        btn_next_id_click()
+    btn_next_id.click()
 
 def btn_next_class_click():
     btn_next_class = driver.find_element_by_class_name("next")
@@ -66,10 +57,9 @@ def slice(test):
     slice_text = slice_text[:5]
     return slice_text
 
-def captcha():
-    capt = driver.find_element_by_tag_name('iframe')
-    print(capt.text)
-    capt.click()
+def nav_btn():
+    nav_btn_click = driver.find_element_by_class_name("nav-btn")
+    nav_btn_click.click()
 
 ###########################Авторизация##################################
 def autorization():
@@ -78,16 +68,30 @@ def autorization():
         auto = json.load(json_auto)
 
     inputElement = driver.find_elements_by_class_name('input100')
-    print(len(inputElement))
     inputElement[0].send_keys(auto["Login"])
     inputElement[0].send_keys(Keys.ENTER)
+    sleep(3)
     inputElement[1].send_keys(auto["Password"])
     inputElement[1].send_keys(Keys.ENTER)
-    inputbutton = driver.find_element_by_class_name('login100-form-btn')
-    inputbutton.click()
+    sleep(5)
+    #inputbutton = driver.find_element_by_class_name('login100-form-btn')
+    #inputbutton.click()
+    sleep(10)
+    json_auto.close()
 
-    auto.close()
+    retry_autorization()
 
+def retry_autorization():
+    try:
+        timeout = driver.find_element_by_class_name('activationInfo')
+        if timeout.text == "Время сессии истекло\nДля продолжения старого бронирования либо для создания нового повторно войдите в систему":
+            btn_activation = driver.find_element_by_class_name('activation')
+            btn_activation.click()
+            autorization()
+        else:
+            pass
+    except NoSuchElementException:
+        pass
 # Прохождение первого и второго этапа бронирования
 class belarusborder_bot(object):
 
@@ -102,12 +106,13 @@ class belarusborder_bot(object):
         self.two_point()
 
     def first_start(self):
-        try:
-            self.webdriver.get("https://belarusborder.by/book")
-        except WebDriverException:
-            quit()
+        self.webdriver.get("https://belarusborder.by")
+        nav_btn()
+        autorization()
+
 
     def one_point(self):
+        self.webdriver.get("https://belarusborder.by/book")
         checkbox_click(self.number_check_one)
         btn_next_id_click()
 
@@ -137,11 +142,8 @@ class bot_step(object):
 
     def cycle_fisrt_time(self):
 
-        try:
-            self.check_time = self.webdriver.find_elements_by_class_name(
-                "intervalAvailable")
-        except WebDriverException:
-            quit()
+        self.check_time = self.webdriver.find_elements_by_class_name(
+            "intervalAvailable")
 
         for time in self.check_time:
 
@@ -163,9 +165,8 @@ class bot_step(object):
                     system('cls')
                     print('Найдена бронь!')
 
-                captcha()
                 btn_next_id_click()
-                autorization()
+
                 for sound in range(10):
                     Beep(440, 250)
                     sleep(0.25)
@@ -193,7 +194,6 @@ def main():
     second_step = bot_step(driver, input_date, input_time)
     first_step.first_queue()
     second_step.second_queue()
-
 
 if __name__ == '__main__':
     main()
