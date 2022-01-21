@@ -1,4 +1,7 @@
 {
     "Login" : "", 
-    "Password" : ""
+    "Password" : "",
+    "Email_login": "",
+    "Email_password": "",
+    "to_Send" : ""
 }

@@ -3,10 +3,38 @@ from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.firefox.options import Options
+from fake_useragent import UserAgent
+from email.mime.text import MIMEText
 from time import sleep
 from winsound import Beep
 from os import system
-import json
+import json, smtplib
+
+
+with open("autorization.json", "r") as json_email:
+        auto = json.load(json_email)
+
+def send_email(message):
+    
+
+    sender = auto["Email_login"]
+    password = auto["Email_password"]
+    send = auto["to_Send"]
+    server = smtplib.SMTP("smtp.gmail.com", 587)
+    server.ehlo()
+    server.starttls()
+
+
+    try:
+        server.login(sender, password)
+        msg = MIMEText(message, 'plain', 'utf-8')
+        msg['Subject'] = '[WARNING] Найдена бронь!'
+
+        server.sendmail(sender, send, msg.as_string())
+        return print("Оповещение успешно отправлено!")
+    except Exception as _ex:
+        return print(f"{_ex}\nПроверьте правильность написания логина и пароля!")
 
 # Текст
 category = 'Категория Транспортного средства\n1.Легковой автомобиль\n2.Грузовой автомобиль\n3.Автобус\n4.Легковой/пассажирский микроавтобус\n5.Мотоцикл'
@@ -14,9 +42,27 @@ category = 'Категория Транспортного средства\n1.Л
 text_choice = 'Выберите стиль работы:\n1.Автоматический\n2.Определенное время'
 timing = '\n00-01 01-02 02-03 03-04 04-05 05-06\n06-07 07-08 08-09 09-10 10-11 11-12\n12-13 13-14 14-15 15-16 16-17 17-18\n18-19 19-20 20-21 21-22 22-23 23-00'
 InputError = 'Ошибка ввода данных при выборе категории ТС и пункта пропуска!'
+# Массив
+tonws = ['Урбаны', 'Бенякони', 'Каменный Лог','Котловка', 'Григоровщина']
 # Драйвер
-driver = webdriver.Firefox()
+options = Options()
+useragent = UserAgent()
+options.set_preference("general.useragent.override", useragent.random)
+driver = webdriver.Firefox(options=options)
 ########################Ввод данных#############################################
+
+def input_category():
+    try:
+        print(category)
+        input_checkbox_one = int(input('Укажите цифрой данную категорию: '))
+        print(сheckpoint)
+        input_checkbox_two = int(input('Укахите цифрой данный пункт пропуска: '))
+        return input_checkbox_one, input_checkbox_two,
+    except ValueError:
+        system('cls')
+        print("Неправильное значение, введите заново")
+        input_category()
+
 def input_times():
     print(f'Выберите время бронирования из перечисленного: {timing}')
     input_time = input("Время: ")
@@ -24,33 +70,42 @@ def input_times():
 
 def input_dates():
     try:
-        print(category)
-        input_checkbox_one = int(input('Укажите цифрой данную категорию: '))
-        print(сheckpoint)
-        input_checkbox_two = int(
-            input('Укахите цифрой данный пункт пропуска: '))
-
         input_day = int(input("Введите день: "))
         input_mouth = int(input("Введите месяц: "))
         input_year = int(input("Введите год: "))
 
         input_date = str(input_day) + '.' + \
             str(input_mouth) + '.' + str(input_year)
-        print(text_choice)
-        input_choice = int(input('Укажите цифрой определенный пункт: '))
-        if input_choice == 1:
-            return input_checkbox_one, input_checkbox_two, input_date
-        elif input_choice == 2:
-            return input_checkbox_one, input_checkbox_two, input_date, input_times()
-        else:
-            print("Неправильное значение, введите заново")
-            input_dates()
-
+        return input_date
     except ValueError:
         system('cls')
         print("Неправильное значение, введите заново")
-        main()
+        input_dates()
 
+def input_choice():
+    print(text_choice)
+    try:
+        input_choice = int(input('Укажите цифрой определенный пункт: '))
+    except ValueError:
+        print("Неправильное значение, введите заново")
+        input_times()
+
+    if input_choice == 1:
+        input_time = None
+        return input_time
+    elif input_choice == 2:
+        input_time = input_times()
+        return input_time
+    else:
+        print("Неправильное значение, введите заново")
+
+def reboot():
+    print('Продолжить поиск?\n1.Да\n2.Нет')
+    reloading = int(input())
+    if reloading == 1:
+        main()
+    elif reloading == 2:
+        quit()
 ######################Кнопки################################################
 
 
@@ -94,7 +149,6 @@ def autorization():
     inputElement[1].send_keys(auto["Password"])
     inputElement[1].send_keys(Keys.ENTER)
     sleep(5)
-    json_auto.close()
 
     retry_autorization()
 
@@ -127,8 +181,8 @@ class belarusborder_bot(object):
 
     def first_start(self):
         self.webdriver.get("https://belarusborder.by")
-        # nav_btn()
-        # autorization()
+        nav_btn()
+        autorization()
 
     def one_point(self):
         self.webdriver.get("https://belarusborder.by/book")
@@ -144,12 +198,13 @@ class belarusborder_bot(object):
 
 class bot_step(object):
 
-    def __init__(self, webdriver, date, time=None):
+    def __init__(self, webdriver, date, town, time=None):
         self.webdriver = webdriver
         self.date = date
         self.time = time
         self.check_time = None
         self.check_control = None
+        self.town = town
 
     def second_queue(self):
         self.start()
@@ -176,8 +231,11 @@ class bot_step(object):
             self.cycle_two_time()
 
     def first_choice(self):
+        url = self.webdriver.current_url
+        date = url[-10:].replace("=", "")
         try:
             self.check_time[0].click()
+            check_time = self.check_time[0].text
             for sound in range(1):
                 Beep(440, 250)
                 sleep(0.25)
@@ -191,7 +249,14 @@ class bot_step(object):
                 sleep(0.25)
                 system('cls')
                 print('Найдена бронь!')
-            sleep(7200)
+            send_email(f'Найдена бронь на аккаунте: {auto["Login"]}\nДата: {date}\nПункт: {self.town}\nВремя: {check_time[:5]}\nURL: {url}')
+            self.webdriver.implicitly_wait(5)
+            self.info = self.webdriver.find_elements(By.CLASS_NAME,('form-control'))
+            self.info[-1].send_keys(f'{self.town} {check_time[:5]} {date[:5]}')
+            input('После ввода данных нажмите Enter...')
+            json_email.close()
+            self.webdriver.close()
+            reboot()
         except IndexError:
             try:
                 while True:
@@ -206,11 +271,14 @@ class bot_step(object):
 
     def cycle_two_time(self):
         try:
+            url = self.webdriver.current_url
+            date = url[-10:].replace("=", "")
             self.check_time = self.webdriver.find_elements(By.CLASS_NAME, (
                 "intervalAvailable"))
             self.check_control = self.webdriver.find_element(By.CLASS_NAME, (
                 "intervalSelected"))
             if slice(self.check_control) == self.time:
+                check_time = self.check_control.text
                 for sound in range(1):
                     Beep(440, 250)
                     sleep(0.25)
@@ -224,7 +292,14 @@ class bot_step(object):
                     sleep(0.25)
                     system('cls')
                     print('Найдена бронь!')
-                sleep(7200)
+                send_email(f'Найдена бронь на аккаунте: {auto["Login"]}\nДата: {date}\nПункт: {self.town}\nВремя: {check_time[:5]}\nURL: {url}')
+                self.webdriver.implicitly_wait(5)
+                self.info = self.webdriver.find_elements(By.CLASS_NAME,('form-control'))
+                self.info[-1].send_keys(f'{self.town} {check_time[:5]} {date[:5]}')
+                input('После ввода данных нажмите Enter...')
+                json_email.close()
+                self.webdriver.close()
+                reboot()
 
         except NoSuchElementException:
             try:
@@ -240,15 +315,11 @@ class bot_step(object):
 
 
 def main():
-    try:
-        input_checkbox_one, input_checkbox_two, input_date, input_time = input_dates()
-    except ValueError:
-        input_checkbox_one, input_checkbox_two, input_date = input_dates()
-        first_step = belarusborder_bot(driver, input_checkbox_one, input_checkbox_two)
-    try:
-        second_step = bot_step(driver, input_date, input_time)
-    except UnboundLocalError:
-        second_step = bot_step(driver, input_date)
+    input_checkbox_one, input_checkbox_two = input_category()
+    town = tonws[input_checkbox_two - 1]
+    input_date = input_dates()
+    first_step = belarusborder_bot(driver, input_checkbox_one, input_checkbox_two)
+    second_step = bot_step(driver, input_date, town, input_choice())
     first_step.first_queue()
     second_step.second_queue()
 
