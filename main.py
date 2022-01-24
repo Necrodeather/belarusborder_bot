@@ -9,14 +9,15 @@ from email.mime.text import MIMEText
 from time import sleep
 from winsound import Beep
 from os import system
-import json, smtplib
+import json
+import smtplib
 
 
 with open("autorization.json", "r") as json_email:
-        auto = json.load(json_email)
+    auto = json.load(json_email)
+
 
 def send_email(message):
-    
 
     sender = auto["Email_login"]
     password = auto["Email_password"]
@@ -24,7 +25,6 @@ def send_email(message):
     server = smtplib.SMTP("smtp.gmail.com", 587)
     server.ehlo()
     server.starttls()
-
 
     try:
         server.login(sender, password)
@@ -36,6 +36,7 @@ def send_email(message):
     except Exception as _ex:
         return print(f"{_ex}\nПроверьте правильность написания логина и пароля!")
 
+
 # Текст
 category = 'Категория Транспортного средства\n1.Легковой автомобиль\n2.Грузовой автомобиль\n3.Автобус\n4.Легковой/пассажирский микроавтобус\n5.Мотоцикл'
 сheckpoint = 'Пункт пропуска\n1.Урбаны\n2.Бенякони\n3.Каменный Лог\n4.Котловка\n5.Григоровщина'
@@ -43,7 +44,7 @@ text_choice = 'Выберите стиль работы:\n1.Автоматиче
 timing = '\n00-01 01-02 02-03 03-04 04-05 05-06\n06-07 07-08 08-09 09-10 10-11 11-12\n12-13 13-14 14-15 15-16 16-17 17-18\n18-19 19-20 20-21 21-22 22-23 23-00'
 InputError = 'Ошибка ввода данных при выборе категории ТС и пункта пропуска!'
 # Массив
-tonws = ['Урбаны', 'Бенякони', 'Каменный Лог','Котловка', 'Григоровщина']
+tonws = ['Урбаны', 'Бенякони', 'Каменный Лог', 'Котловка', 'Григоровщина']
 # Драйвер
 options = Options()
 useragent = UserAgent()
@@ -51,22 +52,26 @@ options.set_preference("general.useragent.override", useragent.random)
 driver = webdriver.Firefox(options=options)
 ########################Ввод данных#############################################
 
+
 def input_category():
     try:
         print(category)
         input_checkbox_one = int(input('Укажите цифрой данную категорию: '))
         print(сheckpoint)
-        input_checkbox_two = int(input('Укахите цифрой данный пункт пропуска: '))
+        input_checkbox_two = int(
+            input('Укахите цифрой данный пункт пропуска: '))
         return input_checkbox_one, input_checkbox_two,
     except ValueError:
         system('cls')
         print("Неправильное значение, введите заново")
         input_category()
 
+
 def input_times():
     print(f'Выберите время бронирования из перечисленного: {timing}')
     input_time = input("Время: ")
     return input_time
+
 
 def input_dates():
     try:
@@ -81,6 +86,7 @@ def input_dates():
         system('cls')
         print("Неправильное значение, введите заново")
         input_dates()
+
 
 def input_choice():
     print(text_choice)
@@ -98,6 +104,7 @@ def input_choice():
         return input_time
     else:
         print("Неправильное значение, введите заново")
+
 
 def reboot():
     print('Продолжить поиск?\n1.Да\n2.Нет')
@@ -208,12 +215,18 @@ class bot_step(object):
 
     def second_queue(self):
         self.start()
-        self.cycle_fisrt_time()
+        self.refresh_side()
 
     def start(self):
         self.webdriver.refresh()
         self.webdriver.get(
             f"https://belarusborder.by/book/time?date={self.date}")
+
+    def refresh_side(self):
+        while True:
+            sleep(1)
+            self.webdriver.refresh()
+            self.cycle_fisrt_time()
 
     def cycle_fisrt_time(self):
 
@@ -249,25 +262,18 @@ class bot_step(object):
                 sleep(0.25)
                 system('cls')
                 print('Найдена бронь!')
-            send_email(f'Найдена бронь на аккаунте: {auto["Login"]}\nДата: {date}\nПункт: {self.town}\nВремя: {check_time[:5]}\nURL: {url}')
+            send_email(
+                f'Найдена бронь на аккаунте: {auto["Login"]}\nДата: {date}\nПункт: {self.town}\nВремя: {check_time[:5]}\nURL: {url}')
             self.webdriver.implicitly_wait(5)
-            self.info = self.webdriver.find_elements(By.CLASS_NAME,('form-control'))
+            self.info = self.webdriver.find_elements(
+                By.CLASS_NAME, ('form-control'))
             self.info[-1].send_keys(f'{self.town} {check_time[:5]} {date[:5]}')
             input('После ввода данных нажмите Enter...')
             json_email.close()
             self.webdriver.close()
             reboot()
         except IndexError:
-            try:
-                while True:
-                    sleep(1)
-                    system('cls')
-                    self.webdriver.refresh()
-                    bot_step.cycle_fisrt_time(self)
-            except RecursionError:
-                pass
-        except TimeoutException:
-            pass
+            return False
 
     def cycle_two_time(self):
         try:
@@ -292,33 +298,28 @@ class bot_step(object):
                     sleep(0.25)
                     system('cls')
                     print('Найдена бронь!')
-                send_email(f'Найдена бронь на аккаунте: {auto["Login"]}\nДата: {date}\nПункт: {self.town}\nВремя: {check_time[:5]}\nURL: {url}')
+                send_email(
+                    f'Найдена бронь на аккаунте: {auto["Login"]}\nДата: {date}\nПункт: {self.town}\nВремя: {check_time[:5]}\nURL: {url}')
                 self.webdriver.implicitly_wait(5)
-                self.info = self.webdriver.find_elements(By.CLASS_NAME,('form-control'))
-                self.info[-1].send_keys(f'{self.town} {check_time[:5]} {date[:5]}')
+                self.info = self.webdriver.find_elements(
+                    By.CLASS_NAME, ('form-control'))
+                self.info[-1].send_keys(
+                    f'{self.town} {check_time[:5]} {date[:5]}')
                 input('После ввода данных нажмите Enter...')
                 json_email.close()
                 self.webdriver.close()
                 reboot()
 
         except NoSuchElementException:
-            try:
-                while True:
-                    sleep(1)
-                    system('cls')
-                    self.webdriver.refresh()
-                    bot_step.cycle_fisrt_time(self)
-            except RecursionError:
-                pass
-        except TimeoutException:
-            pass
+            return False
 
 
 def main():
     input_checkbox_one, input_checkbox_two = input_category()
     town = tonws[input_checkbox_two - 1]
     input_date = input_dates()
-    first_step = belarusborder_bot(driver, input_checkbox_one, input_checkbox_two)
+    first_step = belarusborder_bot(
+        driver, input_checkbox_one, input_checkbox_two)
     second_step = bot_step(driver, input_date, town, input_choice())
     first_step.first_queue()
     second_step.second_queue()
