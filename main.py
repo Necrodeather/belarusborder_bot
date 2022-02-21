@@ -1,62 +1,24 @@
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.by import By
-from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.firefox.options import Options
-from fake_useragent import UserAgent
-from email.mime.text import MIMEText
 from time import sleep
 from winsound import Beep
 from os import system
-import json
-import smtplib
-
-
-with open("autorization.json", "r") as json_email:
-    auto = json.load(json_email)
-
-
-def send_email(message):
-
-    sender = auto["Email_login"]
-    password = auto["Email_password"]
-    send = auto["to_Send"]
-    server = smtplib.SMTP("smtp.gmail.com", 587)
-    server.ehlo()
-    server.starttls()
-
-    try:
-        server.login(sender, password)
-        msg = MIMEText(message, 'plain', 'utf-8')
-        msg['Subject'] = '[WARNING] Найдена бронь!'
-
-        server.sendmail(sender, send, msg.as_string())
-        return print("Оповещение успешно отправлено!")
-    except Exception as _ex:
-        return print(f"{_ex}\nПроверьте правильность написания логина и пароля!")
-
+import json, random
 
 # Текст
-category = 'Категория Транспортного средства\n1.Легковой автомобиль\n2.Грузовой автомобиль\n3.Автобус\n4.Легковой/пассажирский микроавтобус\n5.Мотоцикл'
 сheckpoint = 'Пункт пропуска\n1.Урбаны\n2.Бенякони\n3.Каменный Лог\n4.Котловка\n5.Григоровщина'
-text_choice = 'Выберите стиль работы:\n1.Автоматический\n2.Определенное время'
 timing = '\n00-01 01-02 02-03 03-04 04-05 05-06\n06-07 07-08 08-09 09-10 10-11 11-12\n12-13 13-14 14-15 15-16 16-17 17-18\n18-19 19-20 20-21 21-22 22-23 23-00'
 InputError = 'Ошибка ввода данных при выборе категории ТС и пункта пропуска!'
 # Массив
 tonws = ['Урбаны', 'Бенякони', 'Каменный Лог', 'Котловка', 'Григоровщина']
 # Драйвер
-options = Options()
-useragent = UserAgent()
-options.set_preference("general.useragent.override", useragent.random)
-driver = webdriver.Firefox(options=options)
+driver = webdriver.Firefox()
 ########################Ввод данных#############################################
-
-
 def input_category():
     try:
-        print(category)
-        input_checkbox_one = int(input('Укажите цифрой данную категорию: '))
+        input_checkbox_one = 1
         print(сheckpoint)
         input_checkbox_two = int(
             input('Укахите цифрой данный пункт пропуска: '))
@@ -89,16 +51,10 @@ def input_dates():
 
 
 def input_choice():
-    print(text_choice)
-    try:
-        input_choice = int(input('Укажите цифрой определенный пункт: '))
-    except ValueError:
-        print("Неправильное значение, введите заново")
-        input_times()
+    input_choice = 2
 
     if input_choice == 1:
-        input_time = None
-        return input_time
+        pass
     elif input_choice == 2:
         input_time = input_times()
         return input_time
@@ -224,105 +180,77 @@ class bot_step(object):
 
     def refresh_side(self):
         while True:
-            sleep(1)
+            i = random.uniform(0.3, 1.5)
+            sleep(i)
             self.webdriver.refresh()
-            self.cycle_fisrt_time()
-
-    def cycle_fisrt_time(self):
-
-        self.check_time = self.webdriver.find_elements(By.CLASS_NAME, (
-            "intervalAvailable"))
-        if self.time == None:
-            self.first_choice()
-        else:
-            for time in self.check_time:
-
-                if slice(time) == self.time:
-                    time.click()
-                else:
-                    continue
             self.cycle_two_time()
+        
+############################КАПЧА##################################
+    def checking_captcha(self):
+        sleep(0.5)
+        captcha = self.webdriver.find_element(By.TAG_NAME,('iframe'))
+        self.webdriver.switch_to.frame(captcha)
+        sleep(0.5)
+        self.webdriver.find_element(By.CLASS_NAME,('recaptcha-checkbox-border')).click()
+        sleep(0.5)
+        self.webdriver.maximize_window()
+        return self.checkbox()
 
-    def first_choice(self):
-        url = self.webdriver.current_url
-        date = url[-10:].replace("=", "")
-        try:
-            self.check_time[0].click()
-            check_time = self.check_time[0].text
-            for sound in range(1):
-                Beep(440, 250)
-                sleep(0.25)
-                system('cls')
-                print('Найдена бронь!')
-
+    def checkbox(self):
+        self.checkbox_captcha = self.webdriver.find_element(By.ID,('recaptcha-anchor')).get_attribute('aria-checked')
+        if self.checkbox_captcha == 'true':
+            self.webdriver.switch_to.default_content()
             btn_next_id_click()
+            return self.armour()
+        else:
+            Beep(440, 250)
+            sleep(0.25)
+            system('cls')
+            print('ВНИМАНИЕ!! КАПЧА!!')
+            return self.checkbox()
 
-            for sound in range(10):
+
+##########################################################################################################
+    def armour(self):
+        for sound in range(10):
                 Beep(440, 250)
                 sleep(0.25)
                 system('cls')
                 print('Найдена бронь!')
-            send_email(
-                f'Найдена бронь на аккаунте: {auto["Login"]}\nДата: {date}\nПункт: {self.town}\nВремя: {check_time[:5]}\nURL: {url}')
-            self.webdriver.implicitly_wait(5)
-            self.info = self.webdriver.find_elements(
-                By.CLASS_NAME, ('form-control'))
-            self.info[-1].send_keys(f'{self.town} {check_time[:5]} {date[:5]}')
-            input('После ввода данных нажмите Enter...')
-            json_email.close()
-            self.webdriver.close()
-            reboot()
-        except IndexError:
-            return False
+        self.webdriver.implicitly_wait(5)
+        self.info = self.webdriver.find_elements(By.CLASS_NAME, ('form-control'))
+        self.info[-1].send_keys(f'{self.town} {self.output_check_time[:5]} {self.output_date[:5]}')
+        input('После ввода данных нажмите Enter...')
+        reboot()
 
     def cycle_two_time(self):
         try:
-            url = self.webdriver.current_url
-            date = url[-10:].replace("=", "")
-            self.check_time = self.webdriver.find_elements(By.CLASS_NAME, (
-                "intervalAvailable"))
-            self.check_control = self.webdriver.find_element(By.CLASS_NAME, (
-                "intervalSelected"))
+            self.output_url = self.webdriver.current_url
+            self.output_date = self.output_url[-10:].replace("=", "")
+            self.check_time = self.webdriver.find_elements(By.CLASS_NAME, ("intervalAvailable"))
+            self.check_control = self.webdriver.find_element(By.CLASS_NAME, ("intervalSelected"))
             if slice(self.check_control) == self.time:
-                check_time = self.check_control.text
-                for sound in range(1):
-                    Beep(440, 250)
-                    sleep(0.25)
-                    system('cls')
-                    print('Найдена бронь!')
-
-                btn_next_id_click()
-
-                for sound in range(10):
-                    Beep(440, 250)
-                    sleep(0.25)
-                    system('cls')
-                    print('Найдена бронь!')
-                send_email(
-                    f'Найдена бронь на аккаунте: {auto["Login"]}\nДата: {date}\nПункт: {self.town}\nВремя: {check_time[:5]}\nURL: {url}')
-                self.webdriver.implicitly_wait(5)
-                self.info = self.webdriver.find_elements(
-                    By.CLASS_NAME, ('form-control'))
-                self.info[-1].send_keys(
-                    f'{self.town} {check_time[:5]} {date[:5]}')
-                input('После ввода данных нажмите Enter...')
-                json_email.close()
-                self.webdriver.close()
-                reboot()
+                self.check_control.click()
+                self.output_check_time = self.check_control.text
+                
+                self.checking_captcha()
 
         except NoSuchElementException:
             return False
 
 
 def main():
-    input_checkbox_one, input_checkbox_two = input_category()
-    town = tonws[input_checkbox_two - 1]
-    input_date = input_dates()
-    first_step = belarusborder_bot(
-        driver, input_checkbox_one, input_checkbox_two)
-    second_step = bot_step(driver, input_date, town, input_choice())
-    first_step.first_queue()
-    second_step.second_queue()
+    try:
+        input_checkbox_one, input_checkbox_two = input_category()
+        town = tonws[input_checkbox_two - 1]
+        input_date = input_dates()
+        first_step = belarusborder_bot(
+            driver, input_checkbox_one, input_checkbox_two)
+        second_step = bot_step(driver, input_date, town, input_choice())
+        first_step.first_queue()
+        second_step.second_queue()
+    except Exception as _:
+        print(_)
 
 
 if __name__ == '__main__':
