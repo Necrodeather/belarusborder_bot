@@ -1,5 +1,5 @@
 from selenium import webdriver
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, ElementNotInteractableException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from email.mime.text import MIMEText
@@ -35,17 +35,16 @@ def send_email(message):
 
 # Текст
 category = 'Категория Транспортного средства\n1.Легковой автомобиль\n2.Грузовой автомобиль\n3.Автобус\n4.Легковой/пассажирский микроавтобус\n5.Мотоцикл'
-сheckpoint = 'Пункт пропуска\n1.Урбаны\n2.Бенякони\n3.Каменный Лог\n4.Котловка\n5.Григоровщина'
+сheckpoint = 'Пункт пропуска\n1.Урбаны\n2.Бенякони\n3.Берестовица\n4.Каменный Лог\n5.Котловка\n6.Григоровщина'
 text_choice = 'Выберите стиль работы:\n1.Автоматический\n2.Определенное время'
 timing = '\n00-01 01-02 02-03 03-04 04-05 05-06\n06-07 07-08 08-09 09-10 10-11 11-12\n12-13 13-14 14-15 15-16 16-17 17-18\n18-19 19-20 20-21 21-22 22-23 23-00'
 InputError = 'Ошибка ввода данных при выборе категории ТС и пункта пропуска!'
 # Массив
-tonws = ['Урбаны', 'Бенякони', 'Каменный Лог', 'Котловка', 'Григоровщина']
+tonws = ['Урбаны', 'Бенякони', 'Берестовица','Каменный Лог', 'Котловка', 'Григоровщина']
 # Драйвер
 options = webdriver.ChromeOptions()
 options.add_argument("--disable-blink-features=AutomationControlled")
-options.add_argument(rf'user-data-dir=C:\Users\{auto["User"]}\AppData\Local\Google\Chrome\User Data')
-options.add_argument(f'--profile-directory={auto["Profile"]}')
+options.add_argument(rf'user-data-dir=C:\Users\{auto["User"]}\AppData\Local\Google\Chrome\User Data\{auto["Profile"]}')
 options.add_experimental_option('excludeSwitches', ['enable-logging'])
 driver = webdriver.Chrome(options=options)
 
@@ -57,7 +56,7 @@ def input_category():
         input_checkbox_one = int(input('Укажите цифрой данную категорию: '))
         print(сheckpoint)
         input_checkbox_two = int(
-            input('Укахите цифрой данный пункт пропуска: '))
+            input('Укажите цифрой данный пункт пропуска: '))
         return input_checkbox_one, input_checkbox_two,
     except ValueError:
         system('cls')
@@ -150,12 +149,16 @@ def autorization():
         auto = json.load(json_auto)
 
     inputElement = driver.find_elements(By.CLASS_NAME, ('input100'))
-    inputElement[0].send_keys(auto["Login"])
-    inputElement[0].send_keys(Keys.ENTER)
-    sleep(3)
-    inputElement[1].send_keys(auto["Password"])
-    inputElement[1].send_keys(Keys.ENTER)
-    sleep(5)
+    try:
+        inputElement[0].send_keys(auto["Login"])
+        inputElement[0].send_keys(Keys.ENTER)
+        sleep(3)
+        inputElement[1].send_keys(auto["Password"])
+        inputElement[1].send_keys(Keys.ENTER)
+        sleep(5)
+    except ElementNotInteractableException:
+        nav_btn()
+        autorization()
 
     retry_autorization()
 
@@ -262,13 +265,13 @@ class bot_step(object):
         captcha = self.webdriver.find_element(By.TAG_NAME,('iframe'))
         self.webdriver.switch_to.frame(captcha)
         sleep(0.5)
-        self.webdriver.find_element(By.CLASS_NAME,('recaptcha-checkbox-border')).click()
+        self.webdriver.find_element(By.ID,('anchor-state')).click()
         sleep(0.5)
         self.webdriver.maximize_window()
         return self.checkbox()
 
     def checkbox(self):
-        self.checkbox_captcha = self.webdriver.find_element(By.ID,('recaptcha-anchor')).get_attribute('aria-checked')
+        self.checkbox_captcha = self.webdriver.find_element(By.ID,('checkbox')).get_attribute('aria-checked')
         if self.checkbox_captcha == 'true':
             self.webdriver.switch_to.default_content()
             btn_next_id_click()
@@ -315,14 +318,17 @@ class bot_step(object):
 
 
 def main():
-    input_checkbox_one, input_checkbox_two = input_category()
-    town = tonws[input_checkbox_two - 1]
-    input_date = input_dates()
-    first_step = belarusborder_bot(
-        driver, input_checkbox_one, input_checkbox_two)
-    second_step = bot_step(driver, input_date, town, input_choice())
-    first_step.first_queue()
-    second_step.second_queue()
+    try:
+        input_checkbox_one, input_checkbox_two = input_category()
+        town = tonws[input_checkbox_two - 1]
+        input_date = input_dates()
+        first_step = belarusborder_bot(
+            driver, input_checkbox_one, input_checkbox_two)
+        second_step = bot_step(driver, input_date, town, input_choice())
+        first_step.first_queue()
+        second_step.second_queue()
+    except Exception as _ex:
+        print(_ex)
 
 
 if __name__ == '__main__':
